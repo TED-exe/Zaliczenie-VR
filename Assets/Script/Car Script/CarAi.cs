@@ -21,7 +21,7 @@ public class CarAi : MonoBehaviour
         float forwardAmount = 0;
         float sideAmount = 0;
 
-        float reachedTargetPosition = 5f;
+        float reachedTargetPosition = 1f;
         float distanceToTarget = Vector3.Distance(transform.position, targetPosition);
         if (distanceToTarget > reachedTargetPosition)
         {
@@ -44,11 +44,11 @@ public class CarAi : MonoBehaviour
             }
 
             float angleDir = Vector3.SignedAngle(transform.forward, dirToMovePosition, Vector3.up);
-
-            if (angleDir > 0)
-                sideAmount = 1f;
-            else
-                sideAmount = -1f;
+            float devidedAngleDir = angleDir / carPhysics.GetWheeleRotationLimit();
+            devidedAngleDir = Mathf.Clamp(devidedAngleDir, -1f, 1f);
+            
+            Debug.Log(devidedAngleDir);
+            sideAmount = devidedAngleDir;
         }
         else
         {
@@ -63,7 +63,6 @@ public class CarAi : MonoBehaviour
             sideAmount = 0;
             
         }
-
         carPhysics.GetInput(sideAmount, forwardAmount);
     }
 

@@ -1,10 +1,12 @@
 using System;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Scripting;
 
 [RequireComponent(typeof(CarPhysics))]
 public class CarAi : MonoBehaviour
 {
+    [SerializeField] private CarPath carPath;
     [SerializeField] private Transform targetPositionTransform;
     private Vector3 targetPosition;
     private CarPhysics carPhysics;

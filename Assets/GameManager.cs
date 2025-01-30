@@ -1,0 +1,130 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using TMPro;
+using Unity.VisualScripting;
+using UnityEngine;
+using UnityEngine.Serialization;
+
+public class GameManager : MonoBehaviour
+{
+    [SerializeField] private int loopCount;
+    [SerializeField] private List<Transform> enemyCarSpawnPoints;
+    [SerializeField] private Transform playerSpawnPoint;
+    [SerializeField] private GameObject enemyCarPrefab;
+    [SerializeField] private GameObject playerCarPrefab;
+    public Dictionary<CarPhysics, int> spawnedCarLap = new Dictionary<CarPhysics, int>();
+
+    [SerializeField] private GameObject informationCanvasElement;
+    [SerializeField] private TextMeshProUGUI loopCounter;
+    private bool GameIsStarted = false;
+
+    [SerializeField] private GameObject mainMenuCanvas;
+    
+    
+
+    private void Awake()
+    {
+        SpawnCar();
+        loopCounter.text = loopCounter.text = $"0/{loopCount}";
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            if (informationCanvasElement.activeSelf && !GameIsStarted)
+            {
+                informationCanvasElement.SetActive(false);
+                GameIsStarted = true;
+                StartGame();
+            }
+        }
+    }
+    
+
+    public void SpawnCar()
+    {
+        CarPath path = GameObject.FindObjectOfType<CarPath>();
+
+        foreach (var spawnPoint in enemyCarSpawnPoints)
+        {
+            GameObject carPathObj = new GameObject();
+            CarPath newPath = carPathObj.AddComponent<CarPath>();
+            newPath.SetUpPath(path);
+            GameObject carPrefab = Instantiate(enemyCarPrefab, spawnPoint.position, spawnPoint.rotation);
+            CarPhysics carPhysics = carPrefab.GetComponent<CarPhysics>();
+            CarAi carAI = carPrefab.GetComponent<CarAi>();
+            carAI.carPath = newPath;
+            carAI.StartAI();
+
+            spawnedCarLap.Add(carPhysics, -1);
+        }
+
+        GameObject carPathObjForPlayer = new GameObject();
+        CarPath newPathForPlayer = carPathObjForPlayer.AddComponent<CarPath>();
+        newPathForPlayer.SetUpPath(path);
+
+        
+        GameObject playerCarObj = Instantiate(playerCarPrefab, playerSpawnPoint.position, playerSpawnPoint.rotation);
+        PlayerWaypointSystem playerWaypointSystem = playerCarObj.GetComponent<PlayerWaypointSystem>();
+        
+        playerWaypointSystem.SetUpPath(newPathForPlayer);
+        
+        CarPhysics playerCarPhysics = playerCarObj.GetComponent<CarPhysics>();
+        spawnedCarLap.Add(playerCarPhysics, -1);
+
+        foreach (var car in spawnedCarLap)
+        {
+            car.Key.canRide = false;
+        }
+    }
+
+    public void StartGame()
+    {
+        foreach (var car in spawnedCarLap)
+        {
+            car.Key.canRide = true;
+        }
+    }
+
+    public void AddLoop(CarPhysics carPhysics)
+    {
+        if (spawnedCarLap.ContainsKey(carPhysics))
+        {
+            
+            if (carPhysics.controlAI)
+            {
+                if (spawnedCarLap[carPhysics] == loopCount)
+                {
+                    carPhysics.canRide = false;
+                    carPhysics.gameObject.GetComponent<Collider>().isTrigger = true;
+                }
+                else
+                {
+                    spawnedCarLap[carPhysics]++;
+                }
+            }
+            else
+            {
+                Debug.Log($"end lopop {carPhysics.gameObject.name} ");
+                
+                if(carPhysics.gameObject.GetComponent<PlayerWaypointSystem>().currAllWaypointsindex == 0)
+                if (spawnedCarLap[carPhysics] == loopCount)
+                {
+                    EndRace();
+                }
+                else
+                {
+                    spawnedCarLap[carPhysics]++;
+                    loopCounter.text = $"{spawnedCarLap[carPhysics]}/{loopCount}";
+                }
+            }
+        }
+    }
+
+    private void EndRace()
+    {
+        Debug.Log("end race");
+    }
+}

@@ -15,16 +15,23 @@ public class CarPath : MonoBehaviour
     [HideInInspector] public int PathWaypointsCount = 0;
     public int AllPathWaypointsCount = 0;
 
-    public bool LoopPath = false;
+    public bool LoopPath = true;
     [Min(1)] public int segmentsCounts = 20;
 
     [Header("gizmos")]
     [SerializeField] private float gizmoSphereSize = 0.5f;
 
-    /*    private void OnValidate()
-        {
-            DrawQuadraticBezierPath();
-        }*/
+
+
+    public void SetUpPath(CarPath carPath)
+    {
+        pathWaypoints = carPath.pathWaypoints;
+        AllPathWaypoints = carPath.AllPathWaypoints;
+        PathWaypointsCount = pathWaypoints.Count;
+        AllPathWaypointsCount = AllPathWaypoints.Count;
+        LoopPath = carPath.LoopPath;
+        segmentsCounts = carPath.segmentsCounts;
+    }
     public void CreatePath()
     {
         AllWaypointsPathHolder = new GameObject("AllPoints").transform;
@@ -207,6 +214,111 @@ public class CarPath : MonoBehaviour
             else
             {
                 Gizmos.DrawLine(waypointA.position, waypointB.position);
+            }
+        }
+    }
+    
+    private int currAllWaypointsindex = 0;
+    private bool isReversing = false;   
+
+    public Vector3 GetCurrWaypointPosition()
+    {
+        return AllPathWaypoints[currAllWaypointsindex].position;
+    }
+    
+    public Vector3 GetNextWaypointPosition()
+    {
+        if (AllPathWaypoints == null || AllPathWaypoints.Count == 0)
+            return Vector3.zero;
+
+        int nextIndex = currAllWaypointsindex;
+
+        if (LoopPath)
+        {
+            nextIndex = (currAllWaypointsindex + 1) % AllPathWaypoints.Count;
+        }
+        else
+        {
+            if (!isReversing)
+            {
+                if (currAllWaypointsindex + 1 < AllPathWaypoints.Count)
+                    nextIndex = currAllWaypointsindex + 1;
+                else
+                    nextIndex = currAllWaypointsindex - 1; // Jeśli jesteśmy na końcu, zwróć poprzedni waypoint
+            }
+            else
+            {
+                if (currAllWaypointsindex - 1 >= 0)
+                    nextIndex = currAllWaypointsindex - 1;
+                else
+                    nextIndex = currAllWaypointsindex + 1; // Jeśli jesteśmy na początku, zwróć kolejny waypoint
+            }
+        }
+
+        return AllPathWaypoints[nextIndex].position;
+    }
+    
+    public Vector3 GetPreviousWaypointPosition()
+    {
+        if (AllPathWaypoints == null || AllPathWaypoints.Count == 0)
+            return Vector3.zero;
+
+        int prevIndex = currAllWaypointsindex;
+
+        if (LoopPath)
+        {
+            prevIndex = (currAllWaypointsindex - 1 + AllPathWaypoints.Count) % AllPathWaypoints.Count;
+        }
+        else
+        {
+            if (!isReversing)
+            {
+                if (currAllWaypointsindex - 1 >= 0)
+                    prevIndex = currAllWaypointsindex - 1;
+                else
+                    prevIndex = currAllWaypointsindex + 1; // Jeśli jesteśmy na początku, zwróć następny waypoint
+            }
+            else
+            {
+                if (currAllWaypointsindex + 1 < AllPathWaypoints.Count)
+                    prevIndex = currAllWaypointsindex + 1;
+                else
+                    prevIndex = currAllWaypointsindex - 1; // Jeśli jesteśmy na końcu, zwróć poprzedni waypoint
+            }
+        }
+
+        return AllPathWaypoints[prevIndex].position;
+    }
+    public void NextWaypoint()
+    {
+        if (AllPathWaypoints == null || AllPathWaypoints.Count == 0)
+            return;
+
+        if (LoopPath)
+        {
+            // Zapętlanie
+            currAllWaypointsindex = (currAllWaypointsindex + 1) % AllPathWaypoints.Count;
+        }
+        else
+        {
+            // Rewersowanie
+            if (!isReversing)
+            {
+                currAllWaypointsindex++;
+                if (currAllWaypointsindex >= AllPathWaypoints.Count)
+                {
+                    currAllWaypointsindex = AllPathWaypoints.Count - 2;
+                    isReversing = true;
+                }
+            }
+            else
+            {
+                currAllWaypointsindex--;
+                if (currAllWaypointsindex < 0)
+                {
+                    currAllWaypointsindex = 1;
+                    isReversing = false;
+                }
             }
         }
     }

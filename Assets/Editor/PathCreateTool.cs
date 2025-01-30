@@ -15,7 +15,7 @@ public class PathCreateTool : EditorWindow
     private bool createPathMode = false;
 
     // Highlight
-    private int layerToHighlight = 8;
+    private int layerToHighlight = 7;
     private Color highlightColor = Color.yellow;
 
     // Path

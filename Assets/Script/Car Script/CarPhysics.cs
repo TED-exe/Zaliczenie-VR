@@ -10,7 +10,7 @@ public class CarPhysics : MonoBehaviour
     [SerializeField] private Transform[] drivingWheelsTransform;
     [SerializeField] private LayerMask whatIsGround;
     [SerializeField] private Rigidbody carRigidbody;
-    [SerializeField] private bool controlAI;
+    public bool controlAI;
 
     [Header("Suspension Setting")] [SerializeField]
     private float springLeanght;
@@ -41,7 +41,9 @@ public class CarPhysics : MonoBehaviour
     private float lastUsedTime;
 
     [Header("ONLY READ DATA")] [SerializeField]
-    private bool isBreaking = false;
+    public bool isBreaking = false;
+
+    public bool canRide;
 
     private float targetRotation;
     private float horizontalInput;
@@ -57,6 +59,9 @@ public class CarPhysics : MonoBehaviour
 
     private void Update()
     {
+        if(!canRide)
+            return;
+        
         if (!controlAI)
         {
             GetInput();
@@ -72,6 +77,8 @@ public class CarPhysics : MonoBehaviour
             {
                 SuspesionCalculate(allWheelsTransform[i], CheckTireTouchGround(allWheelsTransform[i]).hit);
                 Steering(allWheelsTransform[i]);
+                if(!canRide)
+                    continue;   
                 Acceleration(allWheelsTransform[i]);
             }
             else
@@ -181,21 +188,21 @@ public class CarPhysics : MonoBehaviour
             if (accelerationInput > 0)
             {
                 float carSpeed = Vector3.Dot(transform.forward, carRigidbody.linearVelocity);
+                if (carSpeed >= carMaxSpeed) return; // Nie przyspieszaj, jeśli osiągnięto maksymalną prędkość
 
                 float normalizedSpeed = Mathf.Clamp01(Mathf.Abs(carSpeed) / carMaxSpeed);
-
                 avaibleTorque = powerCurve.Evaluate(normalizedSpeed) * accelerationInput * carAcceleration;
             }
             else if (accelerationInput < 0)
             {
                 float carSpeed = Vector3.Dot(transform.forward, carRigidbody.linearVelocity);
+                if (carSpeed <= -carMaxBackSpeed) return; // Nie przyspieszaj, jeśli osiągnięto maksymalną prędkość wsteczną
 
                 float normalizedSpeed = Mathf.Clamp01(Mathf.Abs(carSpeed) / carMaxBackSpeed);
-
                 avaibleTorque = powerBackCurve.Evaluate(normalizedSpeed) * accelerationInput * carBackAcceleration;
             }
 
-            carRigidbody.AddForceAtPosition(accelerationDir * avaibleTorque, selectedWheeleTransform.position);
+            carRigidbody.AddForceAtPosition(accelerationDir * avaibleTorque, transform.position);
         }
         else
         {
@@ -230,5 +237,9 @@ public class CarPhysics : MonoBehaviour
     public float GetWheeleRotationLimit()
     {
         return wheelsRotationLimit;
+    }
+
+    public void ResetVelocity()
+    {
     }
 }

@@ -119,8 +119,8 @@ public class CarPhysics : MonoBehaviour
     {
         if (!controlAI)
         {
-            horizontalInput = Input.GetAxis("Horizontal");
-            accelerationInput = Input.GetAxis("Vertical");
+            horizontalInput = JoystickGrab.JoystickInput.x;
+            accelerationInput = JoystickGrab.JoystickInput.y;
             isBreaking = (Input.GetKey(KeyCode.Space));
             Debug.DrawRay(flipCheckRaycast.position, flipCheckRaycast.up);
             if (Time.time - lastUsedTime >= flipCarCooldown)

@@ -5,6 +5,7 @@ using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
@@ -21,12 +22,26 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private GameObject mainMenuCanvas;
     
+    [Header("VR Things")] 
+    [SerializeField] private Button startRaceButton;
+    [SerializeField] private GameObject uiGameObject;
+
+    
+    
     
 
     private void Awake()
     {
         SpawnCar();
         loopCounter.text = loopCounter.text = $"0/{loopCount}";
+    }
+
+    private void Start()
+    {
+        if (startRaceButton == null || uiGameObject == null) return;
+        startRaceButton.onClick.RemoveAllListeners();
+        startRaceButton.onClick.AddListener(StartGameButtonClicked);
+        
     }
 
     private void Update()
@@ -40,6 +55,15 @@ public class GameManager : MonoBehaviour
                 StartGame();
             }
         }
+    }
+
+    public void StartGameButtonClicked()
+    {
+        /*if (!informationCanvasElement.activeSelf || GameIsStarted) return;
+        informationCanvasElement.SetActive(false);*/
+        GameIsStarted = true;
+        StartGame();
+        Destroy(uiGameObject);
     }
     
 

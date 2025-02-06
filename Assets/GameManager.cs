@@ -4,6 +4,7 @@ using System.IO;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
@@ -15,6 +16,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject enemyCarPrefab;
     [SerializeField] private GameObject playerCarPrefab;
     public Dictionary<CarPhysics, int> spawnedCarLap = new Dictionary<CarPhysics, int>();
+
+    [SerializeField] private GameObject endRaceUI;
 
     [SerializeField] private GameObject informationCanvasElement;
     [SerializeField] private TextMeshProUGUI loopCounter;
@@ -44,7 +47,7 @@ public class GameManager : MonoBehaviour
         
     }
 
-    private void Update()
+/*    private void Update()
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
@@ -55,7 +58,7 @@ public class GameManager : MonoBehaviour
                 StartGame();
             }
         }
-    }
+    }*/
 
     public void StartGameButtonClicked()
     {
@@ -149,6 +152,11 @@ public class GameManager : MonoBehaviour
 
     private void EndRace()
     {
-        Debug.Log("end race");
+        endRaceUI.SetActive(true);
+    }
+
+    public void ResetRaceButton()
+    {
+        SceneManager.LoadScene("VR_Scene");
     }
 }

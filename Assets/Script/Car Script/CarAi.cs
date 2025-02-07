@@ -9,10 +9,9 @@ public class CarAi : MonoBehaviour
     [SerializeField] private Transform targetPositionTransform;
     private Vector3 targetPosition;
     private CarPhysics carPhysics;
-    
-    
-    [Header("PAth/Waypoints")]
-    public CarPath carPath;
+
+
+    [Header("PAth/Waypoints")] public CarPath carPath;
     [SerializeField] private float maxWaypointSize;
     [SerializeField] private float minWaypointSize;
     [SerializeField] private float currWaypointSize = 0.5f;
@@ -30,9 +29,9 @@ public class CarAi : MonoBehaviour
 
     private void Update()
     {
-        if(!carPhysics.canRide)
+        if (!carPhysics.canRide)
             return;
-        
+
         var distanceToTarget = Vector3.Distance(transform.position, targetPosition);
         BaseControll(distanceToTarget);
         CheckDistance(distanceToTarget);
@@ -63,7 +62,7 @@ public class CarAi : MonoBehaviour
 
         // Przesunięcie w górę o 2 jednostki, by uniknąć kolizji
         transform.position = lastWaypoint + Vector3.up * 2f;
-    
+
         // Obrót w kierunku następnego waypointa
         Vector3 directionToNext = (nextWaypoint - lastWaypoint).normalized;
         transform.rotation = Quaternion.LookRotation(directionToNext, Vector3.up);
@@ -81,78 +80,79 @@ public class CarAi : MonoBehaviour
         }
     }
 
-private void BaseControll(float distanceToTarget)
-{
-    float forwardAmount = 0;
-    float sideAmount = 0;
-    
-    float reachedTargetPosition = 1f;
-    float slowDownDistance = 2f; // Od jakiej odległości zaczyna zwalniać
-    float minAccelerationFactor = 0.4f; // Minimalna wartość przyspieszenia
-    float maxAngleSlowDown = 45f; // Kąt, od którego zaczyna zwalniać na zakrętach
-    float hardBrakeAngleThreshold = 70f; // Kąt, od którego włącza ręczny
-
-    if (distanceToTarget > reachedTargetPosition)
+    private void BaseControll(float distanceToTarget)
     {
-        Vector3 dirToMovePosition = (targetPosition - transform.position).normalized;
-        float dot = Vector3.Dot(transform.forward, dirToMovePosition);
+        float forwardAmount = 0;
+        float sideAmount = 0;
 
-        if (dot > 0)
-            forwardAmount = 1f;
-        else if (dot < 0)
+        float reachedTargetPosition = 1f;
+        float slowDownDistance = 2f; // Od jakiej odległości zaczyna zwalniać
+        float minAccelerationFactor = 0.4f; // Minimalna wartość przyspieszenia
+        float maxAngleSlowDown = 45f; // Kąt, od którego zaczyna zwalniać na zakrętach
+        float hardBrakeAngleThreshold = 70f; // Kąt, od którego włącza ręczny
+
+        if (distanceToTarget > reachedTargetPosition)
         {
-            float reverseDistance = 25f;
-            if (distanceToTarget > reverseDistance)
-            {
+            Vector3 dirToMovePosition = (targetPosition - transform.position).normalized;
+            float dot = Vector3.Dot(transform.forward, dirToMovePosition);
+
+            if (dot > 0)
                 forwardAmount = 1f;
+            else if (dot < 0)
+            {
+                float reverseDistance = 25f;
+                if (distanceToTarget > reverseDistance)
+                {
+                    forwardAmount = 1f;
+                }
+                else
+                {
+                    forwardAmount = -1f;
+                }
+            }
+
+            float angleDir = Vector3.SignedAngle(transform.forward, dirToMovePosition, Vector3.up);
+            float devidedAngleDir = angleDir / carPhysics.GetWheeleRotationLimit();
+            devidedAngleDir = Mathf.Clamp(devidedAngleDir, -1f, 1f);
+            sideAmount = devidedAngleDir;
+
+            // **1. Zmniejszanie prędkości im bliżej celu**
+            if (distanceToTarget < slowDownDistance)
+            {
+                float slowDownFactor = Mathf.Clamp01(distanceToTarget / slowDownDistance);
+                forwardAmount *= Mathf.Lerp(minAccelerationFactor, 1f, slowDownFactor);
+            }
+
+            // **2. Zmniejszanie prędkości przy dużym skręcie**
+            float angleFactor = Mathf.Clamp01(Mathf.Abs(angleDir) / maxAngleSlowDown);
+            forwardAmount *= (1f - angleFactor);
+
+            // **3. Hamowanie ręcznym przy bardzo dużym kącie skrętu**
+            if (Mathf.Abs(angleDir) > hardBrakeAngleThreshold)
+            {
+                carPhysics.isBreaking = true;
             }
             else
             {
-                forwardAmount = -1f;
+                carPhysics.isBreaking = false;
             }
         }
-
-        float angleDir = Vector3.SignedAngle(transform.forward, dirToMovePosition, Vector3.up);
-        float devidedAngleDir = angleDir / carPhysics.GetWheeleRotationLimit();
-        devidedAngleDir = Mathf.Clamp(devidedAngleDir, -1f, 1f);
-        sideAmount = devidedAngleDir;
-
-        // **1. Zmniejszanie prędkości im bliżej celu**
-        if (distanceToTarget < slowDownDistance)
-        {
-            float slowDownFactor = Mathf.Clamp01(distanceToTarget / slowDownDistance);
-            forwardAmount *= Mathf.Lerp(minAccelerationFactor, 1f, slowDownFactor);
-        }
-
-        // **2. Zmniejszanie prędkości przy dużym skręcie**
-        float angleFactor = Mathf.Clamp01(Mathf.Abs(angleDir) / maxAngleSlowDown);
-        forwardAmount *= (1f - angleFactor);
-
-        // **3. Hamowanie ręcznym przy bardzo dużym kącie skrętu**
-        if (Mathf.Abs(angleDir) > hardBrakeAngleThreshold)
-        {
-            carPhysics.isBreaking = true;
-        }
         else
         {
-            carPhysics.isBreaking = false;
-        }
-    }
-    else
-    {
-        if (carPhysics.GetSpeed() > 15f)
-        {
-            forwardAmount = -1f;
-        }
-        else
-        {
-            forwardAmount = 0;
-        }
-        sideAmount = 0;
-    }
+            if (carPhysics.GetSpeed() > 15f)
+            {
+                forwardAmount = -1f;
+            }
+            else
+            {
+                forwardAmount = 0;
+            }
 
-    carPhysics.GetInput(sideAmount, forwardAmount);
-}
+            sideAmount = 0;
+        }
+
+        carPhysics.GetInput(sideAmount, forwardAmount);
+    }
 
 
     private void SetTargetPosition(Vector3 targetPosition)
@@ -162,7 +162,7 @@ private void BaseControll(float distanceToTarget)
 
     private float DistanceToPoint(Vector3 targetPosition)
     {
-        return Vector3.Distance(transform.position,targetPosition);
+        return Vector3.Distance(transform.position, targetPosition);
     }
 
     private void OnDrawGizmosSelected()

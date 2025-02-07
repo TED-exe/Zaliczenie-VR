@@ -24,10 +24,14 @@ public class GameManager : MonoBehaviour
     private bool GameIsStarted = false;
 
     [SerializeField] private GameObject mainMenuCanvas;
+    [SerializeField] private CarPhysics playerCarPhysics;
+    [SerializeField] private CarPath playerPath;
     
     [Header("VR Things")] 
     [SerializeField] private Button startRaceButton;
     [SerializeField] private GameObject uiGameObject;
+
+    public bool IsDebug;
 
     
     
@@ -47,9 +51,9 @@ public class GameManager : MonoBehaviour
         
     }
 
-/*    private void Update()
+   private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Space) && IsDebug)
         {
             if (informationCanvasElement.activeSelf && !GameIsStarted)
             {
@@ -58,7 +62,7 @@ public class GameManager : MonoBehaviour
                 StartGame();
             }
         }
-    }*/
+    }
 
     public void StartGameButtonClicked()
     {
@@ -89,16 +93,16 @@ public class GameManager : MonoBehaviour
         }
 
         GameObject carPathObjForPlayer = new GameObject();
-        CarPath newPathForPlayer = carPathObjForPlayer.AddComponent<CarPath>();
-        newPathForPlayer.SetUpPath(path);
+        playerPath = carPathObjForPlayer.AddComponent<CarPath>();
+        playerPath.SetUpPath(path);
 
         
         GameObject playerCarObj = Instantiate(playerCarPrefab, playerSpawnPoint.position, playerSpawnPoint.rotation);
         PlayerWaypointSystem playerWaypointSystem = playerCarObj.GetComponent<PlayerWaypointSystem>();
         
-        playerWaypointSystem.SetUpPath(newPathForPlayer);
+        playerWaypointSystem.SetUpPath(playerPath);
         
-        CarPhysics playerCarPhysics = playerCarObj.GetComponent<CarPhysics>();
+        playerCarPhysics = playerCarObj.GetComponent<CarPhysics>();
         spawnedCarLap.Add(playerCarPhysics, -1);
 
         foreach (var car in spawnedCarLap)
@@ -135,16 +139,24 @@ public class GameManager : MonoBehaviour
             else
             {
                 Debug.Log($"end lopop {carPhysics.gameObject.name} ");
-                
-                if(carPhysics.gameObject.GetComponent<PlayerWaypointSystem>().currAllWaypointsindex == 0)
-                if (spawnedCarLap[carPhysics] == loopCount)
+
+                if (carPhysics.gameObject.GetComponent<PlayerWaypointSystem>().currAllWaypointsindex == 0)
                 {
-                    EndRace();
+                    Debug.Log("end lopop");
+                    if (spawnedCarLap[carPhysics] == loopCount)
+                    {
+                        EndRace();
+                    }
+                    else
+                    {
+                        spawnedCarLap[carPhysics]++;
+                        loopCounter.text = $"{spawnedCarLap[carPhysics]}/{loopCount}";
+                    }
                 }
                 else
                 {
-                    spawnedCarLap[carPhysics]++;
-                    loopCounter.text = $"{spawnedCarLap[carPhysics]}/{loopCount}";
+                    Debug.Log("no end lopop " + carPhysics.gameObject.GetComponent<PlayerWaypointSystem>().currAllWaypointsindex);
+
                 }
             }
         }
@@ -157,6 +169,26 @@ public class GameManager : MonoBehaviour
 
     public void ResetRaceButton()
     {
-        SceneManager.LoadScene("VR_Scene");
+        SceneManager.LoadScene("EndScene");
+    }
+
+    public void RestPositionButton()
+    {
+        if (playerPath == null || playerCarPhysics == null)
+        {
+            Debug.Log("NO PLAYER ON SCENE");
+            return;
+        }
+        Vector3 lastWaypoint = playerPath.GetPreviousWaypointPosition();
+        Vector3 nextWaypoint = playerPath.GetCurrWaypointPosition();
+
+        // Przesunięcie w górę o 2 jednostki, by uniknąć kolizji
+        playerCarPhysics.transform.position = lastWaypoint + Vector3.up * 2f;
+
+        // Obrót w kierunku następnego waypointa
+        Vector3 directionToNext = (nextWaypoint - lastWaypoint).normalized;
+        playerCarPhysics.transform.rotation = Quaternion.LookRotation(directionToNext, Vector3.up);
+
+        playerCarPhysics.ResetVelocity(); // Opcjonalnie, jeśli CarPhysics ma taką metodę
     }
 }
